@@ -11,10 +11,5 @@
         "src": "/(.*)",
         "dest": "src/index.js"
       }
-    ],
-    "env": {
-      "NODE_VERSION": "20.x"
-    },
-    "buildCommand": "npm install",
-    "outputDirectory": "dist"
-  }
+    ]
+}

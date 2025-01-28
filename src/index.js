@@ -3,7 +3,7 @@ import cors from "cors"
 import compression from "compression"
 import Joi from "joi"
 import { initRoutes } from "./routes/index.js"
-import { environment } from "./loaders/environment.loader.js"
+// import { environment } from "./loaders/environment.loader.js"
 import { db } from "./loaders/db.loader.js"
 
 const { ValidationError } = Joi;
