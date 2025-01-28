@@ -17,31 +17,12 @@ app.use(
     })
 )
 
-// Async function to start the server
-const startServer = async () => {
-    try {
-        // Connect to the database first
-        await db()
-        
-        // Initialize routes
-        initRoutes(app)
-
-        const PORT = environment.PORT || 3000
-        app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`)
-        })
-    } catch (error) {
-        console.error("Failed to start server:", error)
-        process.exit(1)
-    }
-}
+// Initialize database connection
+let isDbConnected = false;
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-    console.log(err)
-    if (environment.SHOW_ADMIN) {
-        console.log(err)
-    }
+    console.error(err)
     if (err) {
         if (err.statusCode === 500) {
             // sentry.captureException(err)
@@ -55,10 +36,24 @@ app.use((err, req, res, next) => {
     }
 })
 
-// Start the server
-startServer()
+// Initialize routes
+initRoutes(app)
 
-export {
-    app,
-    express
+// Vercel serverless function handler
+const handler = async (req, res) => {
+    // Ensure database connection
+    if (!isDbConnected) {
+        try {
+            await db();
+            isDbConnected = true;
+        } catch (error) {
+            console.error("Database connection failed:", error);
+            return res.status(500).json({ error: "Database connection failed" });
+        }
+    }
+
+    // Handle the request
+    app(req, res);
 }
+
+export default handler;
