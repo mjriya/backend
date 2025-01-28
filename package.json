@@ -1,16 +1,15 @@
 {
-  "name": "sportzpoint",
+  "name": "mj",
   "version": "1.0.0",
-  "description": "sportzpoint backend",
+  "description": "mj backend",
   "main": "src/index.js",
   "type": "module",
-  "repository": "git@github.com:sajdakabir/sportzpoint-be.git",
   "scripts": {
     "dev": "nodemon --experimental-modules src/index.js",
     "test": "jest",
     "start": "node --experimental-modules src/index.js"
   },
-  "author": "sportzpoint",
+  "author": "mj",
   "license": "MIT",
   "dependencies": {
     "aws-sdk": "^2.1692.0",
