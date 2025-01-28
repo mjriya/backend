@@ -4,10 +4,10 @@
   "description": "mj backend",
   "main": "src/index.js",
   "type": "module",
-  "scripts": {
-    "dev": "nodemon --experimental-modules src/index.js",
-    "test": "jest",
-    "start": "node --experimental-modules src/index.js"
+ "scripts": {
+    "build": "echo 'No build step required'",
+    "start": "node --experimental-modules src/index.js",
+    "dev": "nodemon --experimental-modules src/index.js"
   },
   "author": "mj",
   "license": "MIT",
