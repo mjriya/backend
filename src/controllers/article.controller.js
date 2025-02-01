@@ -463,7 +463,6 @@ export const getPublishedArticlesByType = async (req, res) => {
         } else {
             query.type = type
         }
-        console.log(query);
 
 
         // Fetch published articles by type
@@ -550,7 +549,6 @@ export const getDraftArticlesByType = async (req, res) => {
 
         // Get total count of matching articles for pagination metadata
         const totalCount = await Article.countDocuments(query);
-        console.log(articles);
         
         return res.status(200).json({
             articles,

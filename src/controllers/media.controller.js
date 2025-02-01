@@ -17,7 +17,6 @@ export const getMediaFileNames = async (req, res) => {
     const image = formData.get("image");
 
     const data = await uploadImage(image, "mj");
-    console.log("data", data);
       
     return res.status(200).json({
       url: data?.secure_url,

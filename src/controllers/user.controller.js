@@ -33,7 +33,6 @@ export const loginUser = async (req, res) => {
       { userId: user._id, roles: user.roles }, // Payload
       process.env.JWT_SECRET
     );
-    console.log("Token:", token);
 
     // Send the full user data along with the token
     res.status(200).json({
@@ -378,7 +377,6 @@ const resetPassword = async (req, res) => {
     // Hash the new password before saving it
 
     user.password = password;
-    console.log("pas: ", password)
 
     // Clear the reset token and expiration fields after password reset
     user.resetPasswordToken = undefined;
