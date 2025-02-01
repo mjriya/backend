@@ -3,7 +3,7 @@ import { db } from "../loaders/db.loader.js";
 
 const ArticleSchema = new mongoose.Schema({
     post_id: { type: Number, unique: true },
-    type: { type: String, enum: ["bengali","hindi","english","wpstatus"] },
+    type: { type: String, enum: ["bengali","hindi","english","sort_stories"] },
     title: { type: String, required: true },
     slug: {
         type: String,
@@ -49,7 +49,7 @@ const ArticleSchema = new mongoose.Schema({
     status: { type: String, enum: ["draft", "published", "pending_approval", ""], default: "" },
     live: { type: Boolean, default: false },
     focusKeyphrase: { type: String },
-    wpstatus: [{
+    web_story: [{
         type: { type: String, default: '' },
         cta_link: { type: String, default: '' },
         cta_text: { type: String, default: '' },
