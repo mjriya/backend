@@ -3,11 +3,6 @@ import { createArticleController, getAllTagController, getAllCategoryController,
 import { isAdmin, authenticateJWT, checkRole } from '../middleware/auth.middleware.js';
 import { getPendingApprovalPostsController } from "../controllers/admin.controller.js"
 import { getPublishedAllArticles, getAllDraftArticlesByType, getAllPendingApprovalPostsController, searchArticlesByTitle, getUserPendingApprovalPostsController, getLiveArticles } from "../controllers/getAllpost.js";
-<<<<<<< HEAD
-// import { sendNotification } from "../controllers/firebaseAdmin.controller.js";
-=======
-import { sendNotification } from "../controllers/firebaseAdmin.controller.js";
->>>>>>> 9052714860bebd02f034d6e7c78d570990ce8998
 
 const router = Router();
 router.route("/tag/").get(getAllTagController)
@@ -55,9 +50,5 @@ router.get('/posts/search', searchArticlesByTitle);
 router.get('/content/search', searchArticles);
 router.get('/content/search/client', searchArticlesClient);
 router.get('/content/author', searchArticlesByAuthor);
-// router.post("/send", sendNotification);
-// published posts
-
-
 
 export default router;
