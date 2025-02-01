@@ -126,3 +126,6 @@ logs
 fans.json
 companies.json
 index.html
+
+# Firebase Admin SDK Credentials
+*-firebase-adminsdk-*.json
