@@ -129,3 +129,6 @@ index.html
 
 # Firebase Admin SDK Credentials
 *-firebase-adminsdk-*.json
+# Firebase Service Account Credentials
+*-firebase-adminsdk-*.json
+firebase-credentials.json
