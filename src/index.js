@@ -3,9 +3,10 @@ import cors from "cors"
 import compression from "compression"
 import Joi from "joi"
 import { initRoutes } from "./routes/index.js"
-// import { environment } from "./loaders/environment.loader.js"
+import { environment } from "./loaders/environment.loader.js"
 import { db } from "./loaders/db.loader.js"
 
+const port = environment.PORT  
 const { ValidationError } = Joi;
 const app = express()
 app.use(cors())
@@ -20,9 +21,24 @@ app.use(
 // Initialize database connection
 let isDbConnected = false;
 
-// Error handling middleware
+// Explicitly connect to database for local development
+const connectDatabase = async () => {
+    if (!isDbConnected) {
+        try {
+            await db();
+            isDbConnected = true;
+        } catch (error) {
+            console.error("Database connection failed:", error);
+            process.exit(1);
+        }
+    }
+}
+
 app.use((err, req, res, next) => {
-    console.error(err)
+    console.log(err)
+    if (environment.SHOW_ADMIN) {
+        console.log(err)
+    }
     if (err) {
         if (err.statusCode === 500) {
             // sentry.captureException(err)
@@ -32,12 +48,20 @@ app.use((err, req, res, next) => {
             message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong. Please contact the administrator'
         })
     } else {
+        
         next()
     }
 })
 
 // Initialize routes
 initRoutes(app)
+
+// Call database connection before starting the server
+connectDatabase().then(() => {
+    app.listen(port, () => {
+        console.log(`Server running on port ${port}`);
+    });
+});
 
 // Vercel serverless function handler
 const handler = async (req, res) => {
@@ -55,5 +79,4 @@ const handler = async (req, res) => {
     // Handle the request
     app(req, res);
 }
-
 export default handler;
