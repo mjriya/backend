@@ -4,13 +4,12 @@
   "description": "mj backend",
   "main": "src/index.js",
   "type": "module",
- "scripts": {
+  "scripts": {
     "build": "echo 'No build step required'",
     "start": "node --experimental-modules src/index.js",
     "dev": "nodemon --experimental-modules src/index.js"
   },
   "author": "mj",
-  "license": "MIT",
   "dependencies": {
     "aws-sdk": "^2.1692.0",
     "bcrypt": "^5.1.1",
@@ -19,7 +18,7 @@
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "csv-parser": "^3.0.0",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "firebase-admin": "^13.0.1",
     "html-escaper": "^3.0.3",
