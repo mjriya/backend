@@ -14,14 +14,14 @@ const ArticleSchema = new mongoose.Schema({
     },
     summary: { type: String },
     legacy_url: { type: String },
-    primary_category: [{
+    primary_category:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Category'
-    }],
-    categories: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Category'
-    }],
+    },
+    series:{
+        type:Boolean,
+        default:false
+    },
     tags: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Tag'
@@ -47,7 +47,10 @@ const ArticleSchema = new mongoose.Schema({
     seo_title: { type: String },
     content: { type: String },
     status: { type: String, enum: ["draft", "published", "pending_approval", ""], default: "" },
-    live: { type: Boolean, default: false },
+    relatedPost:[{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Article'
+    }],
     focusKeyphrase: { type: String },
     web_story: [{
         type: { type: String, default: '' },
