@@ -1,5 +1,6 @@
 import { Article } from "../model/articel.model.js";
 import { Category } from "../model/category.model.js";
+import { Stroise } from "../model/sortStroise.js";
 import { Tag } from "../model/tag.model.js";
 import { User } from "../model/user.model.js";
 import mongoose from "mongoose";
@@ -522,22 +523,24 @@ export const saveAsDraftController = async (req, res) => {
 
 
 export const getDraftArticlesByType = async (req, res) => {
+    
+    
     try {
-        const { type, page = 1, limit = 10 } = req.query; // Extract type, page, and limit from query parameters
-       console.log('type',type);
+        const { langue, page = 1, limit = 10,content } = req.query; // Extract type, page, and limit from query parameters
        
         
         const query = { status: 'draft' }; // Base query for draft articles
 
         // Add type filter if provided
-        if (type) {
-            query.type = type;
+        if (langue) {
+            query.langue = langue;
         }
 
         const skip = (page - 1) * limit; // Calculate how many articles to skip for pagination
-
-        // Fetch draft articles based on the query and populate related fields
-        const articles = await Article.find(query)
+        let articles;
+        let totalCount;
+        if(content==="content"){
+             articles = await Article.find(query).select("-content")
             .populate("primary_category", "name slug") // Populate primary category
             .populate("categories", "name slug")       // Populate secondary categories   // Populate tags
             .populate("author", "name email social_profiles profile_picture") // Populate author details
@@ -546,10 +549,25 @@ export const getDraftArticlesByType = async (req, res) => {
             .skip(skip)
             .limit(parseInt(limit))
             .exec();
+            totalCount = await Article.countDocuments(query);
+        }
+        if(content==="stories"){
+            articles = await Stroise.find(query).select("-web_story")
+            .populate("primary_category", "name slug") // Populate primary category
+            .populate("categories", "name slug")       // Populate secondary categories   // Populate tags
+            .populate("author", "name email social_profiles profile_picture") // Populate author details
+            .populate("credits", "name email social_profiles profile_picture") // Populate credits details
+            .sort({ updatedAt: -1 })
+            .skip(skip)
+            .limit(parseInt(limit))
+            .exec();
+            totalCount = await Stroise.countDocuments(query);
+        }
+        
 
         // Get total count of matching articles for pagination metadata
-        const totalCount = await Article.countDocuments(query);
         
+            
         return res.status(200).json({
             articles,
             pagination: {

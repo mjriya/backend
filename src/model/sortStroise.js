@@ -1,10 +1,9 @@
 import mongoose from "mongoose";
-import { db } from "../loaders/db.loader.js";
 
-const ArticleSchema = new mongoose.Schema({
-    
+const StroiseSchema = new mongoose.Schema({
+    post_id: { type: Number, unique: true },
     langue: { type: String, enum: ["bengali","hindi","english"] },
-    title: { type: String},
+    title: { type: String, required: true },
     slug: {
         type: String,
         unique: true
@@ -13,15 +12,19 @@ const ArticleSchema = new mongoose.Schema({
         type: String
     },
     summary: { type: String },
-    primary_category:[{
+    legacy_url: { type: String },
+    primary_category:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Category'
-    }],
+    },
     categories: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Category'
     }],
-    type:{ type: String, enum: ["single",'series'],default:"single" },
+    series:{
+        type:Boolean,
+        default:false
+    },
     tags: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Tag'
@@ -36,6 +39,8 @@ const ArticleSchema = new mongoose.Schema({
     }],
     published_at_datetime: { type: Date, default: null },
     temp_published_at_datetime: { type: Date, default: null },
+    updated_at_datetime: { type: Date },
+    custom_published_at: { type: Date },
     banner_image: { type: String },
     banner_desc: { type: String },
     banner_caption: { type: String },
@@ -43,21 +48,27 @@ const ArticleSchema = new mongoose.Schema({
     hide_banner_image: { type: Boolean, default: false },
     seo_desc: { type: String },
     seo_title: { type: String },
-    content: { type: String },
     status: { type: String, enum: ["draft", "published", "pending_approval", ""], default: "" },
     relatedPost:[{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Article'
+        ref: 'Stroise'
     }],
     focusKeyphrase: { type: String },
-    
+    web_story: [{
+        type: { type: String, default: '' },
+        cta_link: { type: String, default: '' },
+        cta_text: { type: String, default: '' },
+        title: { type: String, default: '' },
+        img_src: { type: String, default: '' },
+        desc: { type: String, default: '' }
+    }]
 },
     { timestamps: true }
 );
 
 
-const Article = mongoose.model('Article', ArticleSchema, 'articles')
+const  Stroise = mongoose.model('Stroise', StroiseSchema, 'stroise')
 
 export {
-    Article
+    Stroise
 };

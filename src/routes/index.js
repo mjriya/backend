@@ -6,9 +6,9 @@ import Category from "./category.route.js"
 import Tag from "./tag.route.js"
 import RssRoute from "./rss.route.js"
 import Notification from "./notification.route.js"
-import Quiz from "./quiz.route.js"
 import LayoutStructure from "./layoutStructure.route.js"
 import Img from "./img.route.js"
+import { Article } from "../model/articel.model.js";
 /*
  * @param {import('express').Application} app
  */
@@ -21,8 +21,9 @@ const initRoutes = (app) => {
     app.use("/categories", Category)
     app.use("/rss", RssRoute)
     app.use("/notification",Notification )
-    app.use("/quiz",Quiz )
     app.use("/structure",LayoutStructure )
+    
+    
 
     app.get("/", async (req, res) => {
         res.json({

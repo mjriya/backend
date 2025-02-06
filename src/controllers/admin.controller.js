@@ -81,14 +81,13 @@ export const getPendingApprovalPostsController = async (req, res) => {
         const skip = (page - 1) * limit; // Calculate how many articles to skip for pagination
 
         // Fetch articles based on the query
-        const articles = await Article.find(query)
+        const articles = await Article.find(query).select("-content")
             .populate("primary_category", "name slug") // Populate primary category
             .populate("categories", "name slug")       // Populate secondary categories
             .populate("tags", "name slug")             // Populate tags
             .populate("author", "name email social_profiles profile_picture") // Populate author details
             .populate("credits", "name email social_profiles profile_picture") // Populate credits details
-            .populate("live_blog_updates")
-        sort({ createdAt: -1 })        // Sort by latest `published_at_datetime`
+            sort({ createdAt: -1 })        // Sort by latest `published_at_datetime`
             .skip(skip)        // Skip documents for pagination
             .limit(parseInt(limit)) // Limit the number of documents
 
@@ -212,7 +211,7 @@ export const customizeController = async (req, res) => {
     try {
         // Check if there's an existing item in the schema
         const existingCustomization = await Customize.findOne();
-        
+
         if (existingCustomization) {
             // If there's an existing item, update it (PUT behavior)
             const updatedCustomization = await Customize.findByIdAndUpdate(
@@ -220,7 +219,7 @@ export const customizeController = async (req, res) => {
                 req.body,
                 { new: true } // Return the updated document
             );
-            
+
             return res.status(200).json({
                 message: "Customization updated successfully",
                 data: updatedCustomization,
