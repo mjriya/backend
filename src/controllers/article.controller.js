@@ -1,6 +1,6 @@
 import { Article } from "../model/articel.model.js";
 import { Category } from "../model/category.model.js";
-import { Stroise } from "../model/sortStroise.js";
+import { Stories } from "../model/sortStroise.js";
 import { Tag } from "../model/tag.model.js";
 import { User } from "../model/user.model.js";
 import mongoose from "mongoose";
@@ -8,27 +8,49 @@ import mongoose from "mongoose";
 
 export const createArticleController = async (req, res, next) => {
     const requestedData = req.body;
-        
+    const { content } = req.query;
     try {
         const { oldId } = requestedData;
 
-        // Check if oldId exists in the request data
-        if (oldId) {
-            // If oldId exists, find the article with the same oldId
-            const existingArticle = await Article.findOne({ oldId });
 
-            if (existingArticle) {
-                // Update the existing article with new data
-                Object.assign(existingArticle, requestedData);
-                const article = await existingArticle.save();
-                return res.status(200).json({ article });
+        if (content === 'content') {
+            if (oldId) {
+                // If oldId exists, find the article with the same oldId
+                const existingArticle = await Article.findOne({ oldId });
+
+                if (existingArticle) {
+                    // Update the existing article with new data
+                    Object.assign(existingArticle, requestedData);
+                    const article = await existingArticle.save();
+                    return res.status(200).json({ article });
+                }
             }
+            console.log(requestedData);
+            
+            // If no oldId found or no match in the database, create a new article
+            const newArticle = new Article(requestedData);
+            const article = await newArticle.save();
+            return res.status(200).json({ article });
         }
 
-        // If no oldId found or no match in the database, create a new article
-        const newArticle = new Article(requestedData);
-        const article = await newArticle.save();
-        return res.status(200).json({ article });
+        if (content === 'stories') {
+            if (oldId) {
+                // If oldId exists, find the article with the same oldId
+                const existingArticle = await Stories.findOne({ oldId });
+
+                if (existingArticle) {
+                    // Update the existing article with new data
+                    Object.assign(existingArticle, requestedData);
+                    const article = await existingArticle.save();
+                    return res.status(200).json({ article });
+                }
+            }
+
+            // If no oldId found or no match in the database, create a new article
+            const newArticle = new Stories(requestedData);
+            const article = await newArticle.save();
+            return res.status(200).json({ article });
+        }
     } catch (err) {
         console.error("Error in createArticleController:", err);
         next(err);
@@ -99,7 +121,7 @@ export const updateArticleController = async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = req.body;
-        
+
         // Validate the update data
         if (!updateData || Object.keys(updateData).length === 0) {
             return res.status(400).json({ message: "Update data is required" });
@@ -221,27 +243,36 @@ export const getArticlesByCategorySlug = async (req, res) => {
 export const getArticleByIdController = async (req, res) => {
     try {
         const { id } = req.params; // Get the article ID from the URL parameters
+        const { content } = req.query;
+        if (content === "content") {
+            console.log("again called")
+            const article = await Article.findById(id)
+                .populate("primary_category", "name slug") // Populate primary category
+                .populate("categories", "name slug")
+                .populate("tags", "name slug")
+                .populate("author", "name email social_profiles profile_picture")
+                .populate("credits", "name email social_profiles profile_picture");
 
-        // Find the article by ID
-        const article = await Article.findById(id)
-            .populate("primary_category", "name slug") // Populate primary category
-            .populate("categories", "name slug")
-            .populate("tags", "name slug")
-            .populate("author", "name email social_profiles profile_picture")
-            .populate("credits", "name email social_profiles profile_picture");
-
-        if (!article) {
-            return res.status(404).json({ message: "Article not found" });
+            if (!article) {
+                return res.status(404).json({ message: "Article not found" });
+            }
+            res.status(200).json({ article });
         }
 
-        // Fetch the 5 latest articles
-        const latestArticles = await Article.find({
-            published_at_datetime: { $ne: null } // Ensure `published_at_datetime` is not null
-        })
-            .sort({ published_at_datetime: -1 }) // Sort by latest `published_at_datetime`
-            .limit(5); // Limit to 5 articles
+        if (content === "stories") {
+            const article = await Stories.findById(id)
+                .populate("primary_category", "name slug") // Populate primary category
+                .populate("categories", "name slug")
+                .populate("tags", "name slug")
+                .populate("author", "name email social_profiles profile_picture")
+                .populate("credits", "name email social_profiles profile_picture");
 
-        res.status(200).json({ article, latestArticles });
+            if (!article) {
+                return res.status(404).json({ message: "Article not found" });
+            }
+            res.status(200).json({ article });
+        }
+
     } catch (error) {
         res.status(500).json({ message: "An error occurred while retrieving the article", error: error.message });
     }
@@ -442,149 +473,136 @@ export const getArticlesByType = async (req, res) => {
         res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
-
 export const getPublishedArticlesByType = async (req, res) => {
     try {
-        const { type } = req.query; // Get the type from query parameters
-
-
-        const { limit = 10, page = 1 } = req.query;
-
-        // Validate limit and page
-        const limitValue = Math.max(Number(limit), 1); // Ensure limit is at least 1
-        const pageValue = Math.max(Number(page), 1);   // Ensure page is at least 1
-        let query = {
-            published_at_datetime: { $ne: null },
-            status: { $ne: "draft" }
-        };
-        if (type === 'bengali') {
-            if (type) {
-                query.type = { $in: ['bengali']};
-            }
-        } else {
-            query.type = type
-        }
-
-
-        // Fetch published articles by type
-        const articles = await Article.find(query)
-            .populate("primary_category", "name slug") // Populate primary category
-            .populate("categories", "name slug")       // Populate secondary categories
-            .populate("tags", "name slug")             // Populate tags
-            .populate("author", "name email social_profiles profile_picture") // Populate author details
-            .populate("credits", "name email social_profiles profile_picture") // Populate credits details
-            .populate("live_blog_updates")
-            .sort({ published_at_datetime: -1 })       // Sort by latest `published_at_datetime`
-            .skip((pageValue - 1) * limitValue)        // Skip documents for pagination
-            .limit(limitValue);                        // Limit the number of documents
-
-        // Get the total count of published articles for the type
-        const totalArticles = await Article.countDocuments({
-            type,
-            published_at_datetime: { $ne: null }, // Ensure `published_at_datetime` is not null
-            status: { $ne: "draft" }
-        });
-
-        res.status(200).json({
-            articles,
-            pagination: {
-                total: totalArticles,
-                limit: limitValue,
-                page: pageValue,
-                totalPages: Math.ceil(totalArticles / limitValue),
-            },
-        });
+      const { langue, limit = 10, page = 1, content } = req.query;
+  
+      const limitValue = Math.max(Number(limit), 1);
+      const pageValue = Math.max(Number(page), 1);
+  
+      let query = { status: "published" };
+      if (langue) query.langue = langue;
+  
+      if (!["content", "stories"].includes(content)) {
+        return res.status(400).json({ message: "Invalid content type provided." });
+      }
+  
+      const model = content === "content" ? Article : Stories;
+      const selectFields = content === "content" ? "-content" : "-web_story";
+  
+      const [articles, totalArticles] = await Promise.all([
+        model.find(query)
+          .select(selectFields)
+          .populate("primary_category", "name slug")
+          .populate("categories", "name slug")
+          .populate("tags", "name slug")
+          .populate("author", "name email social_profiles profile_picture")
+          .populate("credits", "name email social_profiles profile_picture")
+          .sort({ published_at_datetime: -1 })
+          .skip((pageValue - 1) * limitValue)
+          .limit(limitValue),
+        model.countDocuments(query)
+      ]);
+  
+      res.status(200).json({
+        articles,
+        pagination: {
+          total: totalArticles,
+          limit: limitValue,
+          page: pageValue,
+          totalPages: Math.ceil(totalArticles / limitValue),
+        },
+      });
     } catch (error) {
-        console.error("Error fetching published articles by type:", error.message);
-        res.status(500).json({ message: "Internal server error", error: error.message });
+      console.error("Error fetching published articles by type:", error.message);
+      res.status(500).json({ message: "Internal server error", error: error.message });
     }
-};
+  };
+  
+  
 
 export const saveAsDraftController = async (req, res) => {
     try {
         const requestedData = req.body;
+        const { content } = req.query
+
+        if (content === "content") {
+            const newArticle = new Article({
+                ...requestedData,
+                author: req.user.userId, // Assuming `id` is the user's identifier
+                status: "draft",
+                published_at_datetime: null
+
+            });
+            const article = await newArticle.save();
+            return res.status(201).json({ article });
+        }
+        if (content === "stories") {
+            const newArticle = new Stories({
+                ...requestedData,
+                author: req.user.userId, // Assuming `id` is the user's identifier
+                status: "draft",
+                published_at_datetime: null
+
+            });
+            const article = await newArticle.save();
+            return res.status(201).json({ article });
+        }
 
 
-        // Add the authenticated user's ID as the author
-        const newArticle = new Article({
-            ...requestedData,
-            author: req.user.userId, // Assuming `id` is the user's identifier
-            status: "draft",
-            published_at_datetime: null
-
-        });
-
-        const article = await newArticle.save();
-        return res.status(201).json({ article });
     } catch (error) {
         return res.status(500).json({ message: 'An error occurred', error });
     }
 };
 
-
 export const getDraftArticlesByType = async (req, res) => {
-    
-    
     try {
-        const { langue, page = 1, limit = 10,content } = req.query; // Extract type, page, and limit from query parameters
-       
-        
-        const query = { status: 'draft' }; // Base query for draft articles
-
-        // Add type filter if provided
-        if (langue) {
-            query.langue = langue;
-        }
-
-        const skip = (page - 1) * limit; // Calculate how many articles to skip for pagination
-        let articles;
-        let totalCount;
-        if(content==="content"){
-             articles = await Article.find(query).select("-content")
-            .populate("primary_category", "name slug") // Populate primary category
-            .populate("categories", "name slug")       // Populate secondary categories   // Populate tags
-            .populate("author", "name email social_profiles profile_picture") // Populate author details
-            .populate("credits", "name email social_profiles profile_picture") // Populate credits details
-            .sort({ updatedAt: -1 })
-            .skip(skip)
-            .limit(parseInt(limit))
-            .exec();
-            totalCount = await Article.countDocuments(query);
-        }
-        if(content==="stories"){
-            articles = await Stroise.find(query).select("-web_story")
-            .populate("primary_category", "name slug") // Populate primary category
-            .populate("categories", "name slug")       // Populate secondary categories   // Populate tags
-            .populate("author", "name email social_profiles profile_picture") // Populate author details
-            .populate("credits", "name email social_profiles profile_picture") // Populate credits details
-            .sort({ updatedAt: -1 })
-            .skip(skip)
-            .limit(parseInt(limit))
-            .exec();
-            totalCount = await Stroise.countDocuments(query);
-        }
-        
-
-        // Get total count of matching articles for pagination metadata
-        
-            
-        return res.status(200).json({
-            articles,
-            pagination: {
-                page: parseInt(page),
-                limit: parseInt(limit),
-                total: totalCount,
-                totalPages: Math.ceil(totalCount / limit),
-            },
-        });
+      const { langue, page = 1, limit = 10, content } = req.query;
+  
+      const limitValue = Math.max(Number(limit), 1);
+      const pageValue = Math.max(Number(page), 1);
+      const skip = (pageValue - 1) * limitValue;
+  
+      if (!["content", "stories"].includes(content)) {
+        return res.status(400).json({ message: "Invalid content type provided." });
+      }
+  
+      const query = { status: "draft" };
+      if (langue) query.langue = langue;
+  
+      const model = content === "content" ? Article : Stories;
+      const selectFields = content === "content" ? "-content" : "-web_story";
+  
+      const [articles, totalCount] = await Promise.all([
+        model.find(query)
+          .select(selectFields)
+          .populate("primary_category", "name slug")
+          .populate("credits", "name email social_profiles profile_picture")
+          .sort({ updatedAt: -1 })
+          .skip(skip)
+          .limit(limitValue),
+        model.countDocuments(query)
+      ]);
+  
+      return res.status(200).json({
+        articles,
+        pagination: {
+          page: pageValue,
+          limit: limitValue,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limitValue),
+        },
+      });
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: 'An error occurred while fetching draft articles',
-            error: error.message,
-        });
+      console.error("Error fetching draft articles:", error.message);
+      return res.status(500).json({
+        success: false,
+        message: "An error occurred while fetching draft articles",
+        error: error.message,
+      });
     }
 };
+  
 
 
 export const sendForApprovalController = async (req, res) => {
@@ -661,18 +679,24 @@ export const getArticlesByCategoryAndTypeController = async (req, res) => {
 
 export const deleteArticleController = async (req, res) => {
     const { id } = req.params;
-
-
+    const { content } = req.query;
+    
     try {
-        // Find the article by its ID and delete it
-        const article = await Article.findByIdAndDelete(id);
-
-        if (!article) {
-            return res.status(404).json({ message: "Article not found" });
+        if (content === 'content') {
+            const article = await Article.findByIdAndDelete(id);
+            if (!article) {
+                return res.status(404).json({ message: "Article not found" });
+            }
+            res.status(200).json({ message: "Article deleted successfully" });
         }
-        
+        if (content === 'stories') {
+            const article = await Stories.findByIdAndDelete(id);
+            if (!article) {
+                return res.status(404).json({ message: "Article not found" });
+            }
+            res.status(200).json({ message: "Article deleted successfully" });
+        }
 
-        res.status(200).json({ message: "Article deleted successfully" });
     } catch (error) {
         console.error("Error deleting article:", error.message);
         res.status(500).json({ message: "Internal server error", error: error.message });
@@ -741,9 +765,9 @@ export const searchArticles = async (req, res) => {
             .exec();
 
         const totalCount = await Article.countDocuments(query);
-        
+
         return res.status(200).json({
-            articles:content,
+            articles: content,
             pagination: {
                 page: parsedPage,
                 limit: parsedLimit,
@@ -792,7 +816,7 @@ export const searchArticlesClient = async (req, res) => {
             .exec();
 
         const totalCount = await Article.countDocuments(query);
-        
+
         return res.status(200).json({
             articles,
             pagination: {
@@ -815,27 +839,27 @@ export const searchArticlesClient = async (req, res) => {
 export const searchArticlesByAuthor = async (req, res, next) => {
     const { authorId, page = 1, limit = 10 } = req.query;
     console.log("this function called");
-    
+
     try {
         const parsedPage = parseInt(page, 10);
         const parsedLimit = parseInt(limit, 10);
         const skip = (parsedPage - 1) * parsedLimit;
 
         const articles = await Article.find({ credits: { $in: [authorId] }, published_at_datetime: { $ne: null } })
-        .populate("primary_category", "name slug")
-        .populate("categories", "name slug")
-        .populate("tags", "name slug")
-        .populate("author", "name email social_profiles profile_picture")
-        .populate("credits", "name email social_profiles profile_picture")
-        .populate("live_blog_updates")
-        .sort({  updatedAt: -1  })
-        .skip(skip)
-        .limit(parsedLimit)
-        .exec();
-        
+            .populate("primary_category", "name slug")
+            .populate("categories", "name slug")
+            .populate("tags", "name slug")
+            .populate("author", "name email social_profiles profile_picture")
+            .populate("credits", "name email social_profiles profile_picture")
+            .populate("live_blog_updates")
+            .sort({ updatedAt: -1 })
+            .skip(skip)
+            .limit(parsedLimit)
+            .exec();
+
         const totalCount = await Article.countDocuments({ credits: { $in: [authorId] }, published_at_datetime: { $ne: null } });
-        
-        
+
+
         return res.status(200).json({
             articles,
             pagination: {

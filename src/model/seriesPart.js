@@ -44,7 +44,7 @@ const SeriesPartSchema = new mongoose.Schema({
 );
 
 
-const SeriesPart = mongoose.model('Series', SeriesPartSchema, 'series')
+const SeriesPart = mongoose.model('SeriesPart', SeriesPartSchema, 'seriesPart')
 
 export {
     SeriesPart

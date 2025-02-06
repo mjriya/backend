@@ -22,13 +22,13 @@ router.get("/content/slug/:slug", getArticleBySlugController); // end user
 
 // New route to get articles by category and type
 router.get("/content/category/:slug/type/:type", getArticlesByCategoryAndTypeController); // end user
-
+ 
 
 router.get("/posts/published", getPublishedArticlesByType);  // end user
 router.post("/posts/draft", saveAsDraftController); 
 router.get("/posts/draft",  getDraftArticlesByType);
 router.get("/posts/send-for-approval", authenticateJWT, sendForApprovalController);
-router.get("/posts/pending-approval", authenticateJWT, checkRole(['Admin', 'Editor']), getPendingApprovalPostsController);
+router.get("/posts/pending-approval", authenticateJWT, getPendingApprovalPostsController);
 
 router.delete("/article/:id", authenticateJWT, deleteArticleController);
 
@@ -38,8 +38,7 @@ router.route("/article/update/:id").put(authenticateJWT, updateArticleByIdContro
 
 // get all the posts by type
 
-router.get("/posts/pending-approval/user", authenticateJWT, 
-    getUserPendingApprovalPostsController);    
+router.get("/posts/pending-approval/user", authenticateJWT, getUserPendingApprovalPostsController);    
 router.get("/posts/published/all", getPublishedAllArticles); 
 router.get("/posts/draft/all", authenticateJWT,  getAllDraftArticlesByType);
 router.get("/posts/pending-approval/all", authenticateJWT, checkRole(['Admin', 'Editor']), 

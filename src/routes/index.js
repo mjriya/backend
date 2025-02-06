@@ -8,10 +8,8 @@ import RssRoute from "./rss.route.js"
 import Notification from "./notification.route.js"
 import LayoutStructure from "./layoutStructure.route.js"
 import Img from "./img.route.js"
-import { Article } from "../model/articel.model.js";
-/*
- * @param {import('express').Application} app
- */
+import Series from "./series.route.js"
+
 const initRoutes = (app) => {
     app.use("/", ArticleRouter);
     app.use("/media", Img);
@@ -22,6 +20,7 @@ const initRoutes = (app) => {
     app.use("/rss", RssRoute)
     app.use("/notification",Notification )
     app.use("/structure",LayoutStructure )
+    app.use("/series",Series )
     
     
 

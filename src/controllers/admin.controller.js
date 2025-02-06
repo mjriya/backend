@@ -8,13 +8,13 @@ export const publishPostController = async (req, res) => {
         const { id } = req.params;
 
         // Find the article by _id
-        const article = await Article.findOne({ _id: id })
+        const article = await Article.findOne({ _id: id }).select("-content")
             .populate("primary_category", "name slug")
             .populate("categories", "name slug")
             .populate("tags", "name slug")
             .populate("author", "name email social_profiles profile_picture")
             .populate("credits", "name email social_profiles profile_picture")
-            .populate("live_blog_updates");
+            
 
         if (!article) {
             return res.status(404).json({ message: 'Article not found' });
@@ -66,51 +66,58 @@ export const publishPostController = async (req, res) => {
 
 
 
-
 export const getPendingApprovalPostsController = async (req, res) => {
+    console.log("this pending caslled")
     try {
-        const { type, page = 1, limit = 10 } = req.query; // Extract type, page, and limit from query parameters
-
-        const query = { status: 'pending_approval' }; // Base query for pending approval posts
-
-        // Add type filter if provided
-        if (type) {
-            query.type = type;
-        }
-
-        const skip = (page - 1) * limit; // Calculate how many articles to skip for pagination
-
-        // Fetch articles based on the query
-        const articles = await Article.find(query).select("-content")
-            .populate("primary_category", "name slug") // Populate primary category
-            .populate("categories", "name slug")       // Populate secondary categories
-            .populate("tags", "name slug")             // Populate tags
-            .populate("author", "name email social_profiles profile_picture") // Populate author details
-            .populate("credits", "name email social_profiles profile_picture") // Populate credits details
-            sort({ createdAt: -1 })        // Sort by latest `published_at_datetime`
-            .skip(skip)        // Skip documents for pagination
-            .limit(parseInt(limit)) // Limit the number of documents
-
-        // Get total count of matching articles for pagination metadata
-        const totalCount = await Article.countDocuments(query);
-
-        return res.status(200).json({
-            articles,
-            pagination: {
-                page: parseInt(page),
-                limit: parseInt(limit),
-                totalCount,
-                totalPages: Math.ceil(totalCount / limit),
-            },
-        });
+      const { langue, page = 1, limit = 10, content } = req.query;
+  
+      const limitValue = Math.max(Number(limit), 1);
+      const pageValue = Math.max(Number(page), 1);
+      const skip = (pageValue - 1) * limitValue;
+  
+      if (!["content", "stories"].includes(content)) {
+        return res.status(400).json({ message: "Invalid content type provided." });
+      }
+  
+      const query = { status: "pending_approval" };
+      if (langue) query.langue = langue;
+  
+      const model = content === "content" ? Article : Stroise;
+      const selectFields = content === "content" ? "-content" : "-web_story";
+  
+      const [articles, totalCount] = await Promise.all([
+        model.find(query)
+          .select(selectFields)
+          .populate("primary_category", "name slug")
+          .populate("categories", "name slug")
+          .populate("tags", "name slug")
+          .populate("author", "name email social_profiles profile_picture")
+          .populate("credits", "name email social_profiles profile_picture")
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limitValue),
+        model.countDocuments(query),
+      ]);
+  
+      return res.status(200).json({
+        articles,
+        pagination: {
+          page: pageValue,
+          limit: limitValue,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limitValue),
+        },
+      });
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: 'An error occurred while fetching pending approval posts',
-            error: error.message, // Include error message for debugging
-        });
+      console.error("Error fetching pending approval posts:", error.message);
+      return res.status(500).json({
+        success: false,
+        message: "An error occurred while fetching pending approval posts",
+        error: error.message,
+      });
     }
-};
+  };
+  
 
 
 export const unpublishPostController = async (req, res) => {

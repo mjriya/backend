@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const StroiseSchema = new mongoose.Schema({
+const StoriesSchema = new mongoose.Schema({
     post_id: { type: Number, unique: true },
     langue: { type: String, enum: ["bengali","hindi","english"] },
     title: { type: String, required: true },
@@ -13,10 +13,10 @@ const StroiseSchema = new mongoose.Schema({
     },
     summary: { type: String },
     legacy_url: { type: String },
-    primary_category:{
+    primary_category:[{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Category'
-    },
+    }],
     categories: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Category'
@@ -67,8 +67,8 @@ const StroiseSchema = new mongoose.Schema({
 );
 
 
-const  Stroise = mongoose.model('Stroise', StroiseSchema, 'stroise')
+const  Stories = mongoose.model('Stories',StoriesSchema, 'Stories')
 
 export {
-    Stroise
+    Stories
 };
