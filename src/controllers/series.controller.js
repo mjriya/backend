@@ -47,7 +47,7 @@ export const getAllSeries = async (req, res) => {
 export const getAllSeriesArticle = async (req, res) => {
     try {
         const { page = 1, limit = 10, langue, search } = req.query;
-
+        const {status,id}=req.params;
         // Convert `page` and `limit` to integers
         const pageNumber = parseInt(page);
         const pageLimit = parseInt(limit);
@@ -59,8 +59,9 @@ export const getAllSeriesArticle = async (req, res) => {
 
         // Build the query object for filtering
         const query = {
-            type: "series",
             langue: langue,
+            status:status,
+            parent_id:id
         };
 
         // If there's a search term, filter by title
@@ -69,12 +70,12 @@ export const getAllSeriesArticle = async (req, res) => {
         }
 
         // Query the Article collection with pagination, filtering by title if search is provided
-        const series = await Article.find(query)
+        const series = await SeriesPart.find(query)
             .skip((pageNumber - 1) * pageLimit)  // Skip the records for the current page
             .limit(pageLimit);  // Limit the number of records per page
 
         // Get total count of Article documents that match the query
-        const totalCount = await Article.countDocuments(query);
+        const totalCount = await SeriesPart.countDocuments(query);
 
         return res.status(200).json({
             series,

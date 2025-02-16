@@ -8,7 +8,7 @@ const router = express.Router();
 router.post('/',authenticateJWT, createSeries);
 
 // Get All Categories
-router.get('/article', getAllSeriesArticle);
+router.get('/:status/:id', getAllSeriesArticle);
 
 
 
