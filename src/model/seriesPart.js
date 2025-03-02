@@ -9,7 +9,6 @@ const SeriesPartSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
-    type: { type: String, enum: ["bengali", "hindi", "english"] },
     slug: {
         type: String,
         unique: true
@@ -32,7 +31,7 @@ const SeriesPartSchema = new mongoose.Schema({
     seo_desc: { type: String },
     seo_title: { type: String },
     content: { type: String },
-    status: { type: String, enum: ["draft", "published", "pending_approval", ""], default: "" },
+    status: { type: String, enum: ["draft", "published", "pending_approval", ""], default: "draft" },
     relatedPost: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'SeriesPart'

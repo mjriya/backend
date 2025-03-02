@@ -5,13 +5,13 @@ import { Article } from '../model/articel.model.js';
 export const getAllSeries = async (req, res) => {
     try {
         const { parentId } = req.params;
-        
+
         // Convert parentId to ObjectId
         const parentObjectId = mongoose.Types.ObjectId(parentId);
 
         // Extract pagination parameters (default to page 1 and limit 10)
         const { page = 1, limit = 10 } = req.query;
-        
+
         // Convert `page` and `limit` to integers
         const pageNumber = parseInt(page);
         const pageLimit = parseInt(limit);
@@ -28,7 +28,7 @@ export const getAllSeries = async (req, res) => {
 
         // Get total count of SeriesPart to calculate total pages
         const totalCount = await SeriesPart.countDocuments({ parent_id: parentObjectId });
-        console.log(totalCount)
+
         return res.status(200).json({
             series,
             totalCount,
@@ -36,8 +36,8 @@ export const getAllSeries = async (req, res) => {
             currentPage: pageNumber
         });
     } catch (error) {
-       
-        
+
+
         // Handle other errors
         return res.status(500).json({ message: 'An error occurred while fetching series', error });
     }
@@ -47,7 +47,7 @@ export const getAllSeries = async (req, res) => {
 export const getAllSeriesArticle = async (req, res) => {
     try {
         const { page = 1, limit = 10, langue, search } = req.query;
-        const {status,id}=req.params;
+        const { status, id } = req.params;
         // Convert `page` and `limit` to integers
         const pageNumber = parseInt(page);
         const pageLimit = parseInt(limit);
@@ -60,8 +60,8 @@ export const getAllSeriesArticle = async (req, res) => {
         // Build the query object for filtering
         const query = {
             langue: langue,
-            status:status,
-            parent_id:id
+            status: status,
+            parent_id: id
         };
 
         // If there's a search term, filter by title
@@ -89,20 +89,88 @@ export const getAllSeriesArticle = async (req, res) => {
     }
 };
 
+export const getAllSeriesList = async (req, res) => {
+    try {
+        const { langue, search, page = 1, limit = 5 } = req.query;
+        const query = { type: "series", status: "published" };
+
+        // Apply language filter if provided
+        if (langue) {
+            query.langue = langue;
+        }
+
+        // Apply search filter only if search is not empty
+        if (search && search.trim() !== "") {
+            query.title = { $regex: search, $options: "i" }; // Case-insensitive search
+        }
+
+        // Pagination setup
+        const skip = (page - 1) * limit;
+        const getAllSeriesPost = await Article.find(query)
+            .skip(skip)
+            .limit(parseInt(limit));
+
+        // Get total count for pagination metadata
+        const totalCount = await Article.countDocuments(query);
+        return res.status(200).json({
+            series: getAllSeriesPost,
+            totalPages: Math.ceil(totalCount / limit),
+            currentPage: parseInt(page),
+            totalResults: totalCount
+        });
+
+    } catch (error) {
+        return res.status(500).json({ message: "An error occurred while fetching series", error });
+    }
+};
 
 
 export const createSeries = async (req, res) => {
     try {
-       
+
 
         // Query the SeriesPart collection with pagination and parent_id reference
         const series = new SeriesPart(req.body)
         await series.save()
-        
 
-        return res.status(200).json({series});
+
+        return res.status(200).json({ series });
     } catch (error) {
-       
+
         return res.status(500).json({ message: 'An error occurred while fetching series', error });
+    }
+};
+
+
+export const getAllSeriesPart = async (req, res) => {
+    try {
+        const { status, parent_id } = req.params;
+        const { limit = 10, page = 1 } = req.query;
+
+        // Construct query object dynamically
+        const query = {};
+        if (status) query.status = status;
+        if (parent_id) query.parent_id = parent_id;
+
+        // Pagination setup
+        const skip = (page - 1) * limit;
+
+        // Fetch series parts with filtering and pagination
+        const allPartOfSeries = await SeriesPart.find(query)
+            .skip(skip)
+            .limit(parseInt(limit));
+
+        // Get total count for pagination metadata
+        const totalCount = await SeriesPart.countDocuments(query);
+
+        return res.status(200).json({
+            parts: allPartOfSeries,
+            totalPages: Math.ceil(totalCount / limit),
+            currentPage: parseInt(page),
+            totalResults: totalCount
+        });
+
+    } catch (error) {
+        return res.status(500).json({ message: "An error occurred while fetching series parts", error });
     }
 };
