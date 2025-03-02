@@ -28,7 +28,7 @@ export const getAllSeries = async (req, res) => {
 
         // Get total count of SeriesPart to calculate total pages
         const totalCount = await SeriesPart.countDocuments({ parent_id: parentObjectId });
-
+        console.log(totalCount)
         return res.status(200).json({
             series,
             totalCount,
