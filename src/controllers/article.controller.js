@@ -25,8 +25,7 @@ export const createArticleController = async (req, res, next) => {
                     return res.status(200).json({ article });
                 }
             }
-            console.log(requestedData);
-            
+
             // If no oldId found or no match in the database, create a new article
             const newArticle = new Article(requestedData);
             const article = await newArticle.save();
@@ -63,7 +62,6 @@ export const getAllTagController = async (req, res, next) => {
         const tags = await Tag.find();
         return res.status(200).json({ tags });
     } catch (err) {
-        console.log("err: ", err);
         next(err);
     }
 };
@@ -73,7 +71,6 @@ export const getAllCategoryController = async (req, res, next) => {
         const categories = await Category.find();
         return res.status(200).json({ categories });
     } catch (err) {
-        console.log("err: ", err);
         next(err);
     }
 };
@@ -117,28 +114,45 @@ export const searchCategoryByNameController = async (req, res, next) => {
 };
 
 export const updateArticleController = async (req, res) => {
-    console.log("this is called");
     try {
         const { id } = req.params;
+        const { content } = req.query;
         const updateData = req.body;
+
 
         // Validate the update data
         if (!updateData || Object.keys(updateData).length === 0) {
             return res.status(400).json({ message: "Update data is required" });
         }
+        if (content === "stories") {
+            const updatedArticle = await Stories.findByIdAndUpdate(id, updateData, {
+                new: true, // Return the updated document
+                runValidators: true, // Run validation on update
+            });
 
-        // Update the article and return the updated data
-        const updatedArticle = await Article.findByIdAndUpdate(id, updateData, {
-            new: true, // Return the updated document
-            runValidators: true, // Run validation on update
-        });
+            // Check if the article was found and updated
+            if (!updatedArticle) {
+                return res.status(404).json({ message: "Article not found" });
+            }
 
-        // Check if the article was found and updated
-        if (!updatedArticle) {
-            return res.status(404).json({ message: "Article not found" });
+            res.status(200).json({ article: updatedArticle });
+
+
+        } else {
+            const updatedArticle = await Article.findByIdAndUpdate(id, updateData, {
+                new: true, // Return the updated document
+                runValidators: true, // Run validation on update
+            });
+
+            // Check if the article was found and updated
+            if (!updatedArticle) {
+                return res.status(404).json({ message: "Article not found" });
+            }
+
+            res.status(200).json({ article: updatedArticle });
         }
+        // Update the article and return the updated data
 
-        res.status(200).json({ article: updatedArticle });
     } catch (error) {
         console.error("Error updating article:", error);
         res.status(500).json({ message: "An error occurred while updating the article", error: error.message });
@@ -245,7 +259,6 @@ export const getArticleByIdController = async (req, res) => {
         const { id } = req.params; // Get the article ID from the URL parameters
         const { content } = req.query;
         if (content === "content") {
-            console.log("again called")
             const article = await Article.findById(id)
                 .populate("primary_category", "name slug") // Populate primary category
                 .populate("categories", "name slug")
@@ -475,51 +488,51 @@ export const getArticlesByType = async (req, res) => {
 };
 export const getPublishedArticlesByType = async (req, res) => {
     try {
-      const { langue, limit = 10, page = 1, content } = req.query;
-  
-      const limitValue = Math.max(Number(limit), 1);
-      const pageValue = Math.max(Number(page), 1);
-  
-      let query = { status: "published" };
-      if (langue) query.langue = langue;
-  
-      if (!["content", "stories"].includes(content)) {
-        return res.status(400).json({ message: "Invalid content type provided." });
-      }
-  
-      const model = content === "content" ? Article : Stories;
-      const selectFields = content === "content" ? "-content" : "-web_story";
-  
-      const [articles, totalArticles] = await Promise.all([
-        model.find(query)
-          .select(selectFields)
-          .populate("primary_category", "name slug")
-          .populate("categories", "name slug")
-          .populate("tags", "name slug")
-          .populate("author", "name email social_profiles profile_picture")
-          .populate("credits", "name email social_profiles profile_picture")
-          .sort({ published_at_datetime: -1 })
-          .skip((pageValue - 1) * limitValue)
-          .limit(limitValue),
-        model.countDocuments(query)
-      ]);
-  
-      res.status(200).json({
-        articles,
-        pagination: {
-          total: totalArticles,
-          limit: limitValue,
-          page: pageValue,
-          totalPages: Math.ceil(totalArticles / limitValue),
-        },
-      });
+        const { langue, limit = 10, page = 1, content } = req.query;
+
+        const limitValue = Math.max(Number(limit), 1);
+        const pageValue = Math.max(Number(page), 1);
+
+        let query = { status: "published" };
+        if (langue) query.langue = langue;
+
+        if (!["content", "stories"].includes(content)) {
+            return res.status(400).json({ message: "Invalid content type provided." });
+        }
+
+        const model = content === "content" ? Article : Stories;
+        const selectFields = content === "content" ? "-content" : "-web_story";
+
+        const [articles, totalArticles] = await Promise.all([
+            model.find(query)
+                .select(selectFields)
+                .populate("primary_category", "name slug")
+                .populate("categories", "name slug")
+                .populate("tags", "name slug")
+                .populate("author", "name email social_profiles profile_picture")
+                .populate("credits", "name email social_profiles profile_picture")
+                .sort({ published_at_datetime: -1 })
+                .skip((pageValue - 1) * limitValue)
+                .limit(limitValue),
+            model.countDocuments(query)
+        ]);
+
+        res.status(200).json({
+            articles,
+            pagination: {
+                total: totalArticles,
+                limit: limitValue,
+                page: pageValue,
+                totalPages: Math.ceil(totalArticles / limitValue),
+            },
+        });
     } catch (error) {
-      console.error("Error fetching published articles by type:", error.message);
-      res.status(500).json({ message: "Internal server error", error: error.message });
+        console.error("Error fetching published articles by type:", error.message);
+        res.status(500).json({ message: "Internal server error", error: error.message });
     }
-  };
-  
-  
+};
+
+
 
 export const saveAsDraftController = async (req, res) => {
     try {
@@ -557,52 +570,52 @@ export const saveAsDraftController = async (req, res) => {
 
 export const getDraftArticlesByType = async (req, res) => {
     try {
-      const { langue, page = 1, limit = 10, content } = req.query;
-  
-      const limitValue = Math.max(Number(limit), 1);
-      const pageValue = Math.max(Number(page), 1);
-      const skip = (pageValue - 1) * limitValue;
-  
-      if (!["content", "stories"].includes(content)) {
-        return res.status(400).json({ message: "Invalid content type provided." });
-      }
-  
-      const query = { status: "draft" };
-      if (langue) query.langue = langue;
-  
-      const model = content === "content" ? Article : Stories;
-      const selectFields = content === "content" ? "-content" : "-web_story";
-  
-      const [articles, totalCount] = await Promise.all([
-        model.find(query)
-          .select(selectFields)
-          .populate("primary_category", "name slug")
-          .populate("credits", "name email social_profiles profile_picture")
-          .sort({ updatedAt: -1 })
-          .skip(skip)
-          .limit(limitValue),
-        model.countDocuments(query)
-      ]);
-  
-      return res.status(200).json({
-        articles,
-        pagination: {
-          page: pageValue,
-          limit: limitValue,
-          total: totalCount,
-          totalPages: Math.ceil(totalCount / limitValue),
-        },
-      });
+        const { langue, page = 1, limit = 10, content } = req.query;
+
+        const limitValue = Math.max(Number(limit), 1);
+        const pageValue = Math.max(Number(page), 1);
+        const skip = (pageValue - 1) * limitValue;
+
+        if (!["content", "stories"].includes(content)) {
+            return res.status(400).json({ message: "Invalid content type provided." });
+        }
+
+        const query = { status: "draft" };
+        if (langue) query.langue = langue;
+
+        const model = content === "content" ? Article : Stories;
+        const selectFields = content === "content" ? "-content" : "-web_story";
+
+        const [articles, totalCount] = await Promise.all([
+            model.find(query)
+                .select(selectFields)
+                .populate("primary_category", "name slug")
+                .populate("credits", "name email social_profiles profile_picture")
+                .sort({ updatedAt: -1 })
+                .skip(skip)
+                .limit(limitValue),
+            model.countDocuments(query)
+        ]);
+
+        return res.status(200).json({
+            articles,
+            pagination: {
+                page: pageValue,
+                limit: limitValue,
+                total: totalCount,
+                totalPages: Math.ceil(totalCount / limitValue),
+            },
+        });
     } catch (error) {
-      console.error("Error fetching draft articles:", error.message);
-      return res.status(500).json({
-        success: false,
-        message: "An error occurred while fetching draft articles",
-        error: error.message,
-      });
+        console.error("Error fetching draft articles:", error.message);
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while fetching draft articles",
+            error: error.message,
+        });
     }
 };
-  
+
 
 
 export const sendForApprovalController = async (req, res) => {
@@ -680,7 +693,7 @@ export const getArticlesByCategoryAndTypeController = async (req, res) => {
 export const deleteArticleController = async (req, res) => {
     const { id } = req.params;
     const { content } = req.query;
-    
+
     try {
         if (content === 'content') {
             const article = await Article.findByIdAndDelete(id);
@@ -838,7 +851,6 @@ export const searchArticlesClient = async (req, res) => {
 
 export const searchArticlesByAuthor = async (req, res, next) => {
     const { authorId, page = 1, limit = 10 } = req.query;
-    console.log("this function called");
 
     try {
         const parsedPage = parseInt(page, 10);
