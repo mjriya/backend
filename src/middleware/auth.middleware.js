@@ -37,7 +37,7 @@ export const authenticateJWT = (req, res, next) => {
 };
 // Middleware to check if the user is admin
 export const isAdmin = (req, res, next) => {
-  if (req.user && req.user.roles.includes("Admin")) {
+  if (req.user && req.user.roles.includes("admin")) {
     return next();
   }
   res.status(403).json({ message: "Forbidden: You are not authorized to access this resource" });

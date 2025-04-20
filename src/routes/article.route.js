@@ -28,7 +28,7 @@ router.get("/posts/published",authenticateJWT, getPublishedArticlesByType);  // 
 router.post("/posts/draft", saveAsDraftController); 
 router.get("/posts/draft",authenticateJWT,  getDraftArticlesByType);
 router.get("/posts/send-for-approval", authenticateJWT, sendForApprovalController);
-router.get("/posts/pending-approval", authenticateJWT, getPendingApprovalPostsController);
+router.get("/posts/pending-approval", authenticateJWT,isAdmin, getPendingApprovalPostsController);
 
 router.delete("/article/:id", authenticateJWT, deleteArticleController);
 

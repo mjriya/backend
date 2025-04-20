@@ -1,5 +1,6 @@
 import { Article } from '../model/articel.model.js';
 import { Customize } from '../model/customize.model.js';
+import { Stories } from '../model/sortStroise.js';
 import { User } from '../model/user.model.js';
 export const publishPostController = async (req, res) => {
 
@@ -82,7 +83,7 @@ export const getPendingApprovalPostsController = async (req, res) => {
       const query = { status: "pending_approval" };
       if (langue) query.langue = langue;
   
-      const model = content === "content" ? Article : Stroise;
+      const model = content === "content" ? Article : Stories
       const selectFields = content === "content" ? "-content" : "-web_story";
   
       const [articles, totalCount] = await Promise.all([

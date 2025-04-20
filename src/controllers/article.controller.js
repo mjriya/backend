@@ -488,6 +488,7 @@ export const getArticlesByType = async (req, res) => {
 };
 export const getPublishedArticlesByType = async (req, res) => {
     try {
+        const { userId } = req.user;
         const { langue, limit = 10, page = 1, content } = req.query;
 
         const limitValue = Math.max(Number(limit), 1);
@@ -499,7 +500,10 @@ export const getPublishedArticlesByType = async (req, res) => {
         if (!["content", "stories"].includes(content)) {
             return res.status(400).json({ message: "Invalid content type provided." });
         }
-
+        query.$or = [
+            { author: userId },               // User is the author
+            { credits: { $in: [userId] } }    // User is in the credits array
+        ];
         const model = content === "content" ? Article : Stories;
         const selectFields = content === "content" ? "-content" : "-web_story";
 
@@ -569,6 +573,7 @@ export const saveAsDraftController = async (req, res) => {
 };
 
 export const getDraftArticlesByType = async (req, res) => {
+    
     try {
         const { userId } = req.user;
         const { langue, page = 1, limit = 10, content } = req.query;
