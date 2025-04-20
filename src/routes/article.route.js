@@ -24,9 +24,9 @@ router.get("/content/slug/:slug", getArticleBySlugController); // end user
 router.get("/content/category/:slug/type/:type", getArticlesByCategoryAndTypeController); // end user
  
 
-router.get("/posts/published", getPublishedArticlesByType);  // end user
+router.get("/posts/published",authenticateJWT, getPublishedArticlesByType);  // end user
 router.post("/posts/draft", saveAsDraftController); 
-router.get("/posts/draft",  getDraftArticlesByType);
+router.get("/posts/draft",authenticateJWT,  getDraftArticlesByType);
 router.get("/posts/send-for-approval", authenticateJWT, sendForApprovalController);
 router.get("/posts/pending-approval", authenticateJWT, getPendingApprovalPostsController);
 

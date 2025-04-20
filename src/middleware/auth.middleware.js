@@ -4,22 +4,37 @@ import { environment } from "../loaders/environment.loader.js";
 
 // Middleware to authenticate JWT
 export const authenticateJWT = (req, res, next) => {
-  const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
-
+  const token = req.headers.authorization?.split(" ")[1]; // Optional chaining
   if (!token) {
     return res.status(401).json({ message: "No token provided" });
   }
 
-  jwt.verify(token, environment.JWT_SECRET, (err, user) => {
+  jwt.verify(token, environment.JWT_SECRET, (err, decoded) => {
     if (err) {
-      return res.status(403).json({ message: "Invalid or expired token" });
+      return res.status(403).json({
+        message: "Invalid or expired token",
+        error: err.message // Optional: include error details
+      });
     }
 
-    req.user = user; // Attach user data to request object
+    // Ensure decoded token has required fields
+    if (!decoded.userId || !decoded.roles) {
+      return res.status(403).json({
+        message: "Malformed token payload"
+      });
+    }
+
+    // Attach complete user data to request object
+    req.user = {
+      userId: decoded.userId,
+      roles: decoded.roles,
+      // Add other relevant user data from token if needed
+      ...decoded
+    };
+
     next();
   });
 };
-
 // Middleware to check if the user is admin
 export const isAdmin = (req, res, next) => {
   if (req.user && req.user.roles.includes("Admin")) {

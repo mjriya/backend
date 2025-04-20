@@ -21,18 +21,18 @@ export const loginUser = async (req, res) => {
     }
 
     // Compare the provided password with the stored hashed password
-    // const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password);
     // console.log("Password comparison result:", isMatch); // Debugging
 
-    // if (!isMatch) {
-    //   return res.status(400).json({ message: "Invalid email or password" });
-    // }
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid email or password" });
+    }
 
     // Create a JWT token
     const token = jwt.sign(
       { userId: user._id, roles: user.roles }, // Payload
       process.env.JWT_SECRET
-    );
+    );  
 
     // Send the full user data along with the token
     res.status(200).json({
@@ -52,7 +52,7 @@ export const loginUser = async (req, res) => {
 // Create a new user
 export const createUser = async (req, res) => {
   const { name, email, roles } = req.body;
-
+  
   try {
     // Ensure only admins can create users
     // if (!req.user || !req.user.roles.includes("admin")) {
@@ -82,14 +82,14 @@ export const createUser = async (req, res) => {
 
     await newUser.save();
 
-    const subject = "sportzpoint";
-    const text = `Hello ${name},\n\nYour account has been created successfully.\n\nEmail: ${email}\nPassword: ${randomPassword}\n\nPlease change your password after logging in.\n\nBest regards,\nThe SportzPoint Team`;
+    // const subject = "sportzpoint";
+    // const text = `Hello ${name},\n\nYour account has been created successfully.\n\nEmail: ${email}\nPassword: ${randomPassword}\n\nPlease change your password after logging in.\n\nBest regards,\nThe SportzPoint Team`;
 
-    await sendEmail({
-      to: email,
-      subject,
-      text,
-    });
+    // await sendEmail({
+    //   to: email,
+    //   subject,
+    //   text,
+    // });
 
     // Send a response with the generated password
     res.status(201).json({ message: "User created successfully", password: randomPassword, newUser });
