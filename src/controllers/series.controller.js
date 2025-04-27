@@ -123,21 +123,59 @@ export const getAllSeriesList = async (req, res) => {
         return res.status(500).json({ message: "An error occurred while fetching series", error });
     }
 };
+export const getSingleSeriesPart = async (req, res) => {
+    try {
+        // Get total count for pagination metadata
+        const series = await SeriesPart.findById(req.params.id).populate("credits");
+        
+        return res.status(200).json(series);
 
+    } catch (error) {
+        return res.status(500).json({ message: "An error occurred while fetching series", error });
+    }
+};
 
 export const createSeries = async (req, res) => {
     try {
+     console.log("req.body I am called", req.body)
+        const { parent_id} = req.body;
+        
+        // Validate required fields
+        if (!parent_id ) {
+            return res.status(400).json({ message: 'parent_id and part are required' });
+        }
+        const part=await SeriesPart.countDocuments({ parent_id: parent_id });  
+        const obj={...req.body, part: part+1}
+        const series = new SeriesPart(obj);
+        await series.save();
+        return res.status(201).json({ series });
+    } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({ message: 'Duplicate part number for this series' });
+        }
+        return res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
 
-
-        // Query the SeriesPart collection with pagination and parent_id reference
-        const series = new SeriesPart(req.body)
-        await series.save()
-
-
+// Updated updateSeries controller
+export const updateSeries = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const series = await SeriesPart.findByIdAndUpdate(
+            id, 
+            req.body, 
+            { new: true, runValidators: true }
+        );
+        
+        if (!series) {
+            return res.status(404).json({ message: 'Series not found' });
+        }
         return res.status(200).json({ series });
     } catch (error) {
-
-        return res.status(500).json({ message: 'An error occurred while fetching series', error });
+        if (error.code === 11000) {
+            return res.status(400).json({ message: 'Duplicate part number for this series' });
+        }
+        return res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
@@ -174,3 +212,4 @@ export const getAllSeriesPart = async (req, res) => {
         return res.status(500).json({ message: "An error occurred while fetching series parts", error });
     }
 };
+

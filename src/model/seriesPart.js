@@ -3,7 +3,8 @@ import mongoose from "mongoose";
 const SeriesPartSchema = new mongoose.Schema({
     parent_id: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Article'
+        ref: 'Article',
+        required: true  // Added validation since your controller requires it
     },
     title: {
         type: String,
@@ -11,19 +12,14 @@ const SeriesPartSchema = new mongoose.Schema({
     },
     slug: {
         type: String,
-        unique: true
+        unique: true,
+       
     },
-
+    part: {
+        type: Number,
+        required: true  // Remove default since we're calculating it
+    },
     summary: { type: String },
-
-    tags: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Tag'
-    }],
-    author: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
     credits: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
@@ -31,20 +27,22 @@ const SeriesPartSchema = new mongoose.Schema({
     seo_desc: { type: String },
     seo_title: { type: String },
     content: { type: String },
-    status: { type: String, enum: ["draft", "published", "pending_approval", ""], default: "draft" },
+    status: { 
+        type: String, 
+        enum: ["draft", "published", "pending_approval"], // Removed empty string
+        default: "draft" 
+    },
     relatedPost: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'SeriesPart'
     }],
     focusKeyphrase: { type: String },
+}, { timestamps: true });
 
-},
-    { timestamps: true }
-);
+// CORRECTED index declaration (fixed variable name)
+SeriesPartSchema.index({ parent_id: 1, part: 1 }, { unique: true });
 
+// Remove the duplicate index declaration that was using the wrong variable name
+const SeriesPart = mongoose.model('SeriesPart', SeriesPartSchema, 'seriesPart');
 
-const SeriesPart = mongoose.model('SeriesPart', SeriesPartSchema, 'seriesPart')
-
-export {
-    SeriesPart
-};
+export { SeriesPart };
