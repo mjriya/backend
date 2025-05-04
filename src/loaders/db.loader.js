@@ -7,7 +7,6 @@ import { environment } from "./environment.loader.js"
  */
 const db = async () => {
     try {
-        console.log(`🔍 Attempting to connect to MongoDB at: ${environment.MONGO_URI}`);
         
         // Validate MONGO_URI is present
         if (!environment.MONGO_URI) {
@@ -21,9 +20,8 @@ const db = async () => {
             retryWrites: true
         });
         
-        console.log(`✅ Database Connection Successful: Connected to MongoDB at ${environment.MONGO_URI}`);
     } catch (error) {
-        console.error("❌ Error connecting to MongoDB:", error.message);
+     
         console.error("Detailed Error:", error);
         
         // Provide more context about potential connection issues

@@ -68,7 +68,7 @@ export const publishPostController = async (req, res) => {
 
 
 export const getPendingApprovalPostsController = async (req, res) => {
-    console.log("this pending caslled pending")
+ 
     try {
       const { langue, page = 1, limit = 10, content } = req.query;
   
@@ -122,7 +122,7 @@ export const getPendingApprovalPostsController = async (req, res) => {
 
 
 export const unpublishPostController = async (req, res) => {
-    console.log("this unpublish calledddddddddddd")
+    
     try {
         const { id } = req.params; // Get MongoDB _id from request parameters
 

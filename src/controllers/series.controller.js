@@ -90,14 +90,25 @@ export const getAllSeriesArticle = async (req, res) => {
 };
 
 export const getAllSeriesList = async (req, res) => {
+    
     try {
-        const { langue, search, page = 1, limit = 5 } = req.query;
-        const query = { type: "series", status: "published" };
+        let { langue, search, page, limit } = req.query;
 
-        // Apply language filter if provided
+        page = parseInt(page) || 1;
+        limit = parseInt(limit) || 5;
+        const query = { type: "series", status: "published" };
+        const { userId } = req.user;
+      
+       
+        query.$or = [
+            { author: userId },               // User is the author
+            { credits: { $in: [userId] } }    // User is in the credits array
+        ];
         if (langue) {
+            // query.author=userId
             query.langue = langue;
         }
+
 
         // Apply search filter only if search is not empty
         if (search && search.trim() !== "") {
@@ -137,7 +148,7 @@ export const getSingleSeriesPart = async (req, res) => {
 
 export const createSeries = async (req, res) => {
     try {
-     console.log("req.body I am called", req.body)
+
         const { parent_id} = req.body;
         
         // Validate required fields

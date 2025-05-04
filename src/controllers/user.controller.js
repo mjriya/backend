@@ -10,12 +10,10 @@ import nodemailer from "nodemailer";
 
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
-  
-  
   try {
     // Check if the user exists
     const user = await User.findOne({ email });
-   
+
     if (!user) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
@@ -23,7 +21,6 @@ export const loginUser = async (req, res) => {
     // Compare the provided password with the stored hashed password
     const isMatch = await bcrypt.compare(password, user.password);
     // console.log("Password comparison result:", isMatch); // Debugging
-
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
@@ -32,7 +29,7 @@ export const loginUser = async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, roles: user.roles }, // Payload
       process.env.JWT_SECRET
-    );  
+    );
 
     // Send the full user data along with the token
     res.status(200).json({
@@ -52,7 +49,7 @@ export const loginUser = async (req, res) => {
 // Create a new user
 export const createUser = async (req, res) => {
   const { name, email, roles } = req.body;
-  
+
   try {
     // Ensure only admins can create users
     // if (!req.user || !req.user.roles.includes("admin")) {
@@ -200,7 +197,7 @@ export const getArticlesByAuthorStatus = async (req, res) => {
 // Fetch a specific user's data by ID
 export const getUserProfile = async (req, res) => {
   try {
-    const userId = req.params.id; 
+    const userId = req.params.id;
 
     const user = await User.findById(userId).select("-password"); // Exclude password field
 
@@ -226,25 +223,25 @@ export const getUserProfile = async (req, res) => {
 
 // Update the logged-in user's profile
 export const updateMyProfile = async (req, res) => {
- 
- 
-  const { id } = req.params; // ID of the user to update
-  
-  
+
+
+  const { userId } = req.user; // ID of the user to update
+
+
   try {
-    
-    
+
+
     const updatedUser = await User.findByIdAndUpdate(
-      id,
-      { $set: req.body },  
-      { new: true }         
+      userId,
+      { $set: req.body },
+      { new: true }
     );
-    
+
     if (!updatedUser) {
-      
+
       return res.status(404).json({ message: "User not found" });
     }
-   
+
     res.status(200).json({ message: "User updated successfully", updatedUser });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -310,10 +307,10 @@ export const sendEmail = async ({ to, subject, text }) => {
     port: environment.SMTP_PORT,
     secure: false, // true for 465, false for other ports
     auth: {
-        user: environment.SMTP_USER,
-        pass: environment.SMTP_PASS
+      user: environment.SMTP_USER,
+      pass: environment.SMTP_PASS
     }
-});
+  });
 
   await transporter.sendMail({
     from: `"sportzpoint" <${environment.SMTP_USER}>`,
@@ -342,12 +339,13 @@ const forgotPassword = async (req, res) => {
     await user.save();
 
     // Send the email
-    const resetUrl = `${environment.WEB_LINK}/reset-password/${resetToken}`;
-    const aw= await sendEmail({
-      to: email,
-      subject: "Password Reset Request",
-      text: `You requested a password reset. Please go to the following link to reset your password: ${resetUrl}`
-    });
+    // const resetUrl = `${environment.WEB_LINK}/reset-password/${resetToken}`;
+   
+    // const aw = await sendEmail({
+    //   to: email,
+    //   subject: "Password Reset Request",
+    //   text: `You requested a password reset. Please go to the following link to reset your password: ${resetUrl}`
+    // });
     res.status(200).json({ message: "Password reset link sent to your email" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
@@ -356,36 +354,34 @@ const forgotPassword = async (req, res) => {
 
 // Reset password
 const resetPassword = async (req, res) => {
-
   const { token } = req.params;
   const { password } = req.body;
 
   try {
-    // Hash the token to match the one stored in the database
     const resetPasswordToken = crypto.createHash("sha256").update(token).digest("hex");
 
-    // Find user with the matching reset password token and non-expired token
     const user = await User.findOne({
       resetPasswordToken,
-      resetPasswordExpire: { $gt: Date.now() } // Ensure token is not expired
+      resetPasswordExpire: { $gt: Date.now() }
     });
 
     if (!user) {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
-    // Hash the new password before saving it
 
-    user.password = password;
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Clear the reset token and expiration fields after password reset
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
-
-    await user.save();
+    const updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      { password: hashedPassword },
+      { new: true }
+    );
 
     res.status(200).json({ message: "Password has been reset successfully" });
   } catch (error) {
+    console.error("Password reset error:", error);
     res.status(500).json({ message: "Server error", error });
   }
 };
@@ -436,9 +432,10 @@ export const updateUserProfileController = async (req, res) => {
 
 // Fetch a specific user's data by slug
 export const getUserProfileBySlugController = async (req, res) => {
+  const { userId } = req.user;
   try {
-    const slug = req.params.slug;
-    const user = await User.findOne({ slug }).select("-password"); // exclude password field
+    const user = await User.findById(userId).select("-password"); // exclude password field
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }

@@ -113,7 +113,6 @@ export const getImageFileNames = async (req, res) => {
 export const searchMediaFile = async (req, res) => {
   try {
     const { alt, limit=8, page=1  } = req.query;
-
     const skip = (page - 1) * limit;
     // Check if 'alt' is provided
     if (!alt) {

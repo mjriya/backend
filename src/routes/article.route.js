@@ -43,7 +43,7 @@ router.get("/posts/published/all", getPublishedAllArticles);
 router.get("/posts/draft/all", authenticateJWT,  getAllDraftArticlesByType);
 router.get("/posts/pending-approval/all", authenticateJWT, checkRole(['Admin', 'Editor']), 
 getAllPendingApprovalPostsController);
-router.get("/posts/live/all", authenticateJWT, getLiveArticles);
+// router.get("/posts/live/all", authenticateJWT, getLiveArticles);
 router.get('/posts/search', searchArticlesByTitle);
 
 router.get('/content/search', searchArticles);

@@ -35,9 +35,9 @@ const connectDatabase = async () => {
 }
 
 app.use((err, req, res, next) => {
-    console.log(err)
+   
     if (environment.SHOW_ADMIN) {
-        console.log(err)
+        console.log("Error: ", err)
     }
     if (err) {
         if (err.statusCode === 500) {

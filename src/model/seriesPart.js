@@ -13,7 +13,7 @@ const SeriesPartSchema = new mongoose.Schema({
     slug: {
         type: String,
         unique: true,
-       
+
     },
     part: {
         type: Number,
@@ -27,15 +27,19 @@ const SeriesPartSchema = new mongoose.Schema({
     seo_desc: { type: String },
     seo_title: { type: String },
     content: { type: String },
-    status: { 
-        type: String, 
+    status: {
+        type: String,
         enum: ["draft", "published", "pending_approval"], // Removed empty string
-        default: "draft" 
+        default: "draft"
     },
     relatedPost: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'SeriesPart'
     }],
+    author: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
     focusKeyphrase: { type: String },
 }, { timestamps: true });
 

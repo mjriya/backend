@@ -18,11 +18,11 @@ router.post("/create", createUser);
 
 router.put("/update/:id", updateUser);
 router.delete("/delete/:id", authenticateJWT, isAdmin, deleteUser);
-router.put("/my-profile/update/:id", authenticateJWT, updateMyProfile);
+router.put("/my-profile/update", authenticateJWT, updateMyProfile);
 
 
 // Get a specific user's data (accessible to all authenticated users)
-router.get("/profile/:slug", getUserProfileBySlugController);
+router.get("/profile",authenticateJWT, getUserProfileBySlugController);
 
 // Update the logged-in user's profile
 router.put("/profile/update", authenticateJWT, updateUserProfileController);

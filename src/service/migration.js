@@ -59,8 +59,7 @@ async function migrateSocialProfiles() {
       }
     }
 
-    console.log("All users updated successfully!");
-    console.log("Migration completed successfully.");
+    
   } catch (error) {
     console.error("Migration failed:", error);
   }
