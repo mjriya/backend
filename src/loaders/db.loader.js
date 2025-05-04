@@ -1,49 +1,126 @@
-import mongoose from "mongoose"
-import { environment } from "./environment.loader.js"
+import mongoose from "mongoose";
+import { environment } from "./environment.loader.js";
+
+// Connection state tracking
+let isConnected = false;
+let connectionRetries = 0;
+const MAX_RETRIES = 3;
+
+// Cache the connection for serverless environments
+let cachedConnection = null;
 
 /**
- * Establishing MongoDB connection
- * Using mongoose.connect for primary database connection
+ * Enhanced MongoDB connection handler with:
+ * - Serverless optimization
+ * - Connection caching
+ * - Retry logic
+ * - Detailed error handling
  */
 const db = async () => {
-    try {
-        
-        // Validate MONGO_URI is present
-        if (!environment.MONGO_URI) {
-            throw new Error("MONGO_URI is not defined in environment variables");
-        }
+  // Return cached connection if available
+  if (cachedConnection) {
+    return cachedConnection;
+  }
 
-        await mongoose.connect(environment.MONGO_URI, {
-            autoIndex: false,
-            // Additional connection options for stability
-            serverSelectionTimeoutMS: 5000,
-            retryWrites: true
-        });
-        
-    } catch (error) {
-     
-        console.error("Detailed Error:", error);
-        
-        // Provide more context about potential connection issues
-        if (error.name === 'MongoNetworkError') {
-            console.error('Network error: Check your internet connection and MongoDB server status');
-        } else if (error.name === 'MongoError' && error.code === 18) {
-            console.error('Authentication failed: Check your username and password');
-        }
-        
-        // Exit process with failure
-        process.exit(1);
+  try {
+    if (!environment.MONGO_URI) {
+      throw new Error("MONGO_URI is not defined in environment variables");
     }
-}
 
-// Export mongoose for direct use in models
-export { mongoose, db }
+    // Enhanced connection options for production
+    const connectionOptions = {
+      autoIndex: environment.NODE_ENV === 'development', // Only autoIndex in dev
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 30000,
+      retryWrites: true,
+      retryReads: true,
+      maxPoolSize: 10, // Optimal for serverless
+      minPoolSize: 2,
+      heartbeatFrequencyMS: 10000,
+    };
 
-// Optionally, add some mongoose connection event listeners
+    const connection = await mongoose.connect(environment.MONGO_URI, connectionOptions);
+    
+    isConnected = true;
+    connectionRetries = 0;
+    cachedConnection = connection;
+    
+    console.log('✅ MongoDB connected successfully');
+    return connection;
+  } catch (error) {
+    connectionRetries++;
+    
+    if (connectionRetries < MAX_RETRIES) {
+      console.warn(`⚠️ Connection attempt ${connectionRetries} failed. Retrying...`);
+      await new Promise(resolve => setTimeout(resolve, 2000 * connectionRetries));
+      return db();
+    }
+
+    console.error("💥 MongoDB connection failed after retries:", {
+      error: error.message,
+      stack: error.stack,
+      code: error.code,
+      name: error.name
+    });
+
+    // Graceful shutdown
+    process.exitCode = 1;
+    throw error;
+  }
+};
+
+// Connection event listeners
+mongoose.connection.on('connected', () => {
+  isConnected = true;
+  console.log('🟢 MongoDB connection established');
+});
+
 mongoose.connection.on('disconnected', () => {
-    console.warn('⚠️ Lost MongoDB connection');
+  isConnected = false;
+  console.warn('⚠️ MongoDB connection lost');
+  // Attempt reconnection
+  if (!process.exitCode) {
+    setTimeout(() => db(), 5000);
+  }
 });
 
 mongoose.connection.on('reconnected', () => {
-    console.log('🔄 Reconnected to MongoDB');
+  isConnected = true;
+  console.log('🔄 MongoDB reconnected');
 });
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB connection error:', err);
+});
+
+// Graceful shutdown handler
+const shutdown = async () => {
+  try {
+    await mongoose.connection.close();
+    console.log('🛑 MongoDB connection closed gracefully');
+    process.exit(0);
+  } catch (err) {
+    console.error('❌ Error closing MongoDB connection:', err);
+    process.exit(1);
+  }
+};
+
+// Handle process termination
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+// Export mongoose and enhanced db function
+export { mongoose, db };
+
+/**
+ * Utility function to check connection status
+ */
+export const checkConnection = () => {
+  return {
+    isConnected,
+    readyState: mongoose.connection.readyState,
+    retries: connectionRetries,
+    lastError: mongoose.connection._lastError
+  };
+};
