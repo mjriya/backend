@@ -1,4 +1,5 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "builds": [
     {
@@ -29,5 +30,15 @@
       "maxDuration": 30,
       "minDuration": 1
     }
-  }
+  },
+  "buildCommand": "npm run build",
+  "cleanUrls": true,
+  "devCommand": "npm run dev",
+  "framework": null,
+  "crons": [
+    {
+      "path": "/api/cron",
+      "schedule": "0 * * * *"
+    }
+  ]
 }
