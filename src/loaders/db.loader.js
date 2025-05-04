@@ -9,12 +9,22 @@ const MAX_RETRIES = 3;
 // Cache the connection for serverless environments
 let cachedConnection = null;
 
+// Connection statistics
+const connectionStats = {
+  totalOperations: 0,
+  failedOperations: 0,
+  poolAcquisitionTime: 0,
+  lastOperationTime: null
+};
+
 /**
  * Enhanced MongoDB connection handler with:
  * - Serverless optimization
  * - Connection caching
  * - Retry logic
  * - Detailed error handling
+ * - Timeout protection
+ * - Connection pool monitoring
  */
 const db = async () => {
   // Return cached connection if available
@@ -30,14 +40,17 @@ const db = async () => {
     // Enhanced connection options for production
     const connectionOptions = {
       autoIndex: environment.NODE_ENV === 'development', // Only autoIndex in dev
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 30000,  // Increased from 5000ms
       socketTimeoutMS: 45000,
       connectTimeoutMS: 30000,
       retryWrites: true,
       retryReads: true,
-      maxPoolSize: 10, // Optimal for serverless
-      minPoolSize: 2,
+      maxPoolSize: 50,  // Increased from 10
+      minPoolSize: 5,   // Increased from 2
       heartbeatFrequencyMS: 10000,
+      waitQueueTimeoutMS: 20000,  // Timeout for getting a connection from pool
+      maxIdleTimeMS: 60000,       // Close idle connections after 60s
+      minHeartbeatFrequencyMS: 5000 // Minimum time between heartbeats
     };
 
     const connection = await mongoose.connect(environment.MONGO_URI, connectionOptions);
@@ -70,7 +83,10 @@ const db = async () => {
   }
 };
 
-// Connection event listeners
+// ==============================================
+// Connection Event Listeners
+// ==============================================
+
 mongoose.connection.on('connected', () => {
   isConnected = true;
   console.log('🟢 MongoDB connection established');
@@ -94,7 +110,37 @@ mongoose.connection.on('error', (err) => {
   console.error('❌ MongoDB connection error:', err);
 });
 
-// Graceful shutdown handler
+// Connection pool monitoring events
+mongoose.connection.on('connectionPoolReady', () => {
+  console.log('🔵 Connection pool ready');
+});
+
+mongoose.connection.on('connectionPoolCreated', (event) => {
+  console.log('🔵 Connection pool created:', event);
+});
+
+mongoose.connection.on('connectionPoolClosed', (event) => {
+  console.log('🔵 Connection pool closed:', event);
+});
+
+mongoose.connection.on('connectionCreated', () => {
+  console.log('🔵 New connection created');
+});
+
+mongoose.connection.on('connectionCheckedOut', () => {
+  connectionStats.totalOperations++;
+  connectionStats.lastOperationTime = new Date();
+  console.log('🔵 Connection checked out');
+});
+
+mongoose.connection.on('connectionCheckedIn', () => {
+  console.log('🔵 Connection checked in');
+});
+
+// ==============================================
+// Graceful Shutdown Handler
+// ==============================================
+
 const shutdown = async () => {
   try {
     await mongoose.connection.close();
@@ -110,17 +156,64 @@ const shutdown = async () => {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-// Export mongoose and enhanced db function
-export { mongoose, db };
+// ==============================================
+// Utility Functions
+// ==============================================
 
 /**
- * Utility function to check connection status
+ * Enhanced connection status checker
  */
 export const checkConnection = () => {
+  const connection = mongoose.connection;
+  const client = connection?.getClient();
+  
   return {
     isConnected,
-    readyState: mongoose.connection.readyState,
+    readyState: connection.readyState,
     retries: connectionRetries,
-    lastError: mongoose.connection._lastError
+    lastError: connection._lastError,
+    poolSize: connection.poolSize,
+    availableConnections: connection.base?.connections?.length || 0,
+    serverSelectionTimeoutMS: client?.s?.options?.serverSelectionTimeoutMS,
+    waitQueueTimeoutMS: client?.s?.options?.waitQueueTimeoutMS,
+    stats: {
+      ...connectionStats,
+      currentPoolSize: client?.s?.pool?.currentPoolSize,
+      waitQueueSize: client?.s?.pool?.waitQueueSize,
+      totalConnectionCount: client?.s?.pool?.totalConnectionCount
+    }
   };
 };
+
+/**
+ * Middleware to add timeout to operations
+ */
+export const withTimeout = (operation, timeoutMs = 20000) => {
+  return operation.maxTimeMS(timeoutMs).exec();
+};
+
+/**
+ * Health check function
+ */
+export const checkHealth = async () => {
+  try {
+    const start = Date.now();
+    await mongoose.connection.db.admin().ping();
+    const latency = Date.now() - start;
+    
+    return {
+      healthy: true,
+      latency,
+      ...checkConnection()
+    };
+  } catch (error) {
+    return {
+      healthy: false,
+      error: error.message,
+      ...checkConnection()
+    };
+  }
+};
+
+// Export mongoose and enhanced db function
+export { mongoose, db };
